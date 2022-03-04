@@ -1,0 +1,9 @@
+C:\Users\PlantotMon02-001\source\repos\ListenerFramework\bin\Debug\ListenerFramework.exe.config
+C:\Users\PlantotMon02-001\source\repos\ListenerFramework\bin\Debug\ListenerFramework.exe
+C:\Users\PlantotMon02-001\source\repos\ListenerFramework\bin\Debug\ListenerFramework.pdb
+C:\Users\PlantotMon02-001\source\repos\ListenerFramework\bin\Debug\MR6100Api.dll
+C:\Users\PlantotMon02-001\source\repos\ListenerFramework\obj\Debug\ListenerFramework.csproj.AssemblyReference.cache
+C:\Users\PlantotMon02-001\source\repos\ListenerFramework\obj\Debug\ListenerFramework.csproj.CoreCompileInputs.cache
+C:\Users\PlantotMon02-001\source\repos\ListenerFramework\obj\Debug\ListenerFramework.csproj.CopyComplete
+C:\Users\PlantotMon02-001\source\repos\ListenerFramework\obj\Debug\ListenerFramework.exe
+C:\Users\PlantotMon02-001\source\repos\ListenerFramework\obj\Debug\ListenerFramework.pdb
