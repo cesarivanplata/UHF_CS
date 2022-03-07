@@ -175,9 +175,17 @@ namespace ListenerFramework
                     {
                         lastTag[w] = tagUnico[w];
                         tagUnico[w] = TagBuff[ReaderPointer, w];
-                        if (lastTag[w] == tagUnico[w]) { counter++; };
+                        
+                        if (lastTag[w] == tagUnico[w]) 
+                        { 
+                            counter++; 
+                        }
                     }
-                    if (counter != 12) { Console.WriteLine(BitConverter.ToString(tagUnico)); }
+                    if (counter != 12) 
+                    
+                    { 
+                        Console.WriteLine(BitConverter.ToString(tagUnico)); 
+                    }
                     
                     ReaderPointer++;
                 }
@@ -194,8 +202,7 @@ namespace ListenerFramework
              */
 
             byte[] tagUnico = new byte[12];
-            
-            
+                        
             while (accessGranted)
             {
 
