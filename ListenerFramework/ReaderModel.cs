@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+
 using MR6100Api;
 
 namespace ListenerFramework
@@ -19,12 +20,12 @@ namespace ListenerFramework
         public int socket { get; set; }
         public bool accessGranted { get; set; }
 
-        public volatile byte[,] TagBuff;
-        public volatile byte ReaderPointer;
-        public volatile byte InsertPointer;
+        public volatile byte[,] tagBuff;
+        public volatile byte readerPointer;
+        public volatile byte insertPointer;
 
-        public int getcount { get; set; }
-        public int count_tag { get; set; }
+        public int getCount { get; set; }
+        public int countTag { get; set; }
         public bool access { get; set; }
         public MR6100Api.MR6100Api reader { get; set; }
 
@@ -37,13 +38,13 @@ namespace ListenerFramework
             ip = "192.168.1.200";
             socket = 100;
 
-            TagBuff = new byte[256, 12];
-            InsertPointer = 0;
-            ReaderPointer = 0;
+            tagBuff = new byte[256, 12];
+            insertPointer = 0;
+            readerPointer = 0;
 
             accessGranted = false;
-            count_tag = new int();
-            getcount = new byte();
+            countTag = new int();
+            getCount = new byte();
             reader = new MR6100Api.MR6100Api();
         }
 
@@ -53,16 +54,16 @@ namespace ListenerFramework
             socket = puerto;
             accessGranted = false;
 
-            TagBuff = new byte[256, 12];
-            ReaderPointer = 0;
-            InsertPointer = 0;
+            tagBuff = new byte[256, 12];
+            readerPointer = 0;
+            insertPointer = 0;
 
-            count_tag = new int();
-            getcount = new byte();
+            countTag = new int();
+            getCount = new byte();
             reader = new MR6100Api.MR6100Api();
         }
 
-        public string conectar()
+        public string Conectar()
         {
             if (reader.TcpConnectReader(ip,socket) == 2001)
             {
@@ -76,7 +77,7 @@ namespace ListenerFramework
             }
         }
 
-        public string desconectar()
+        public string Desconectar()
         {
             if (reader.TcpCloseConnect() == 2001)
             {
@@ -89,68 +90,71 @@ namespace ListenerFramework
             }
         }
 
-        public void inicializarVariables()
+        public void InicializarVariables()
         {
             accessGranted = false;
-            TagBuff = new byte[256, 12];
-            ReaderPointer = 0;
-            InsertPointer = 0;
+            tagBuff = new byte[256, 12];
+            readerPointer = 0;
+            insertPointer = 0;
         }
 
-        public void readIDs_both()
+        
+
+        public void ReadIDsBoth()
         {
             /*
              * Esta funcion debe llamarse en un hilo, esto para que a la vez que se esta leyendo ambos tipos se pueda enviar
              * todo lo que se este leyendo, y despues se debe matar el hilo cerrando la conexion con la funcion
              * --------------desconectar()-------------------
              */
-            byte[,] tagID_iso = new byte[1024, 12];
-            int tagContador_iso = 0;
-            int getcount_iso = 0;
-            int isoquery;
+            byte[,] tagIDIso = new byte[1024, 12];
+            int tagContadorIso = 0;
+            int getcountIso = 0;
+            int isoQuery;
 
-            byte[,] tagID_epc = new byte[1024, 12];
-            int tagContador_epc = 0;
-            byte getcount_epc = 0;
-            int epcquery;
+            byte[,] tagIDEpc = new byte[1024, 12];
+            int tagContadorEpc = 0;
+            byte getcountEpc = 0;
+            int epcQuery;
 
             int i;
             int j;
 
             while (accessGranted)
             {
-                isoquery = reader.IsoMultiTagIdentify(Int32.Parse(ip.Substring(ip.Length - 3)), ref tagID_iso, ref tagContador_iso, ref getcount_iso);
-                epcquery = reader.EpcMultiTagIdentify(Int32.Parse(ip.Substring(ip.Length - 3)), ref tagID_epc, ref tagContador_epc, ref getcount_epc);
+                isoQuery = reader.IsoMultiTagIdentify(Int32.Parse(ip.Substring(ip.Length - 3)), ref tagIDIso, ref tagContadorIso, ref getcountIso);
+                epcQuery = reader.EpcMultiTagIdentify(Int32.Parse(ip.Substring(ip.Length - 3)), ref tagIDEpc, ref tagContadorEpc, ref getcountEpc);
 
-                if (epcquery == 2001 && tagContador_epc > 0)
+                if (epcQuery == 2001 && tagContadorEpc > 0)
                 {
                     
-                    for (i = 0; i<tagContador_epc; i++)
+                    for (i = 0; i<tagContadorEpc; i++)
                     {
                         for ( j = 0; j < 12; j++)
                         {
-                            TagBuff[InsertPointer, j] = tagID_epc[i, j];
+                            tagBuff[insertPointer, j] = tagIDEpc[i, j];
                         }
-                        InsertPointer++;
+                        insertPointer++;
                     }
                     
                 }
-                if (isoquery == 2001 && tagContador_iso > 0)
+                if (isoQuery == 2001 && tagContadorIso > 0)
                 {
-                    for (i = 0; i < tagContador_iso; i++)
+                    for (i = 0; i < tagContadorIso; i++)
                     {
                         for ( j = 0; j < 12; j++)
                         {
-                            TagBuff[InsertPointer, j] = tagID_iso[i, j];
+                            tagBuff[insertPointer, j] = tagIDIso[i, j];
                         }
-                        InsertPointer++;
+                        insertPointer++;
                     }
                 }
             }
 
             
         }
-        public void get_IDs()
+
+        public void GetIDs()
         {
             /*
              * Esta funcion pretende mostrar en consola  los tags leidos no repetidos mientras aun se leen datos, esta originalmente
@@ -164,7 +168,7 @@ namespace ListenerFramework
             while (accessGranted)
             {
                 
-                if (ReaderPointer == InsertPointer)
+                if (readerPointer == insertPointer)
                 {
                     Thread.Sleep(1);
                 }
@@ -174,27 +178,19 @@ namespace ListenerFramework
                     for (int w = 0; w < 12; w++)
                     {
                         lastTag[w] = tagUnico[w];
-                        tagUnico[w] = TagBuff[ReaderPointer, w];
-                        
-                        if (lastTag[w] == tagUnico[w]) 
-                        { 
-                            counter++; 
-                        }
+                        tagUnico[w] = tagBuff[readerPointer, w];
+                        if (lastTag[w] == tagUnico[w]) { counter++; };
                     }
-                    if (counter != 12) 
+                    if (counter != 12) { Console.WriteLine(BitConverter.ToString(tagUnico)); }
                     
-                    { 
-                        Console.WriteLine(BitConverter.ToString(tagUnico)); 
-                    }
-                    
-                    ReaderPointer++;
+                    readerPointer++;
                 }
 
             }
 
         }
 
-        public void getstream_IDs()
+        public void GetStreamIDs()
         {
             /*
              * Esta funcion pretende mostrar en consola todos los tags incluso repetidos es la misma base que el get_IDs sin el seguro de
@@ -202,27 +198,24 @@ namespace ListenerFramework
              */
 
             byte[] tagUnico = new byte[12];
-                        
+            
             while (accessGranted)
             {
-
-                if (ReaderPointer == InsertPointer)
+                if (readerPointer == insertPointer)
                 {
                     Thread.Sleep(1);
 
                 }
                 else
                 {
-                    
                     for (int w = 0; w < 12; w++)
                     {
                         
-                        tagUnico[w] = TagBuff[ReaderPointer, w];
+                        tagUnico[w] = tagBuff[readerPointer, w];
                         
                     }
                     Console.WriteLine(BitConverter.ToString(tagUnico));
-
-                    ReaderPointer++;
+                    readerPointer++;
                 }
 
             }
