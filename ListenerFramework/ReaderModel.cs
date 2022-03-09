@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-
 using MR6100Api;
 
 namespace ListenerFramework
@@ -28,10 +27,6 @@ namespace ListenerFramework
         public int countTag { get; set; }
         public bool access { get; set; }
         public MR6100Api.MR6100Api reader { get; set; }
-
-
-
-
 
         public ReaderModel()
         {
@@ -97,9 +92,7 @@ namespace ListenerFramework
             readerPointer = 0;
             insertPointer = 0;
         }
-
-        
-
+              
         public void ReadIDsBoth()
         {
             /*
