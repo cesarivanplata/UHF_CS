@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Threading;
 using MR6100Api;
+using System.Net;
+using System.Net.Sockets;
+
 
 namespace ListenerFramework
 {
@@ -16,7 +19,9 @@ namespace ListenerFramework
          */
 
         public string ip { get; set; }
-        public int socket { get; set; }
+        public string ownip { get; set; }
+        public int socketAntenna { get; set; }
+        public int socketLocalHost { get; set; }
         public bool accessGranted { get; set; }
 
         public volatile byte[,] tagBuff;
@@ -28,10 +33,17 @@ namespace ListenerFramework
         public bool access { get; set; }
         public MR6100Api.MR6100Api reader { get; set; }
 
+        public Socket sender = new Socket(AddressFamily.InterNetwork,SocketType.Stream,ProtocolType.Tcp);
+        public IPEndPoint connect;
+
         public ReaderModel()
         {
             ip = "192.168.1.200";
-            socket = 100;
+            socketAntenna = 100;
+
+            ownip = Dns.GetHostName();
+            socketLocalHost = 6400;
+            connect = new IPEndPoint(IPAddress.Parse(ownip), socketLocalHost);
 
             tagBuff = new byte[256, 12];
             insertPointer = 0;
@@ -43,10 +55,15 @@ namespace ListenerFramework
             reader = new MR6100Api.MR6100Api();
         }
 
-        public ReaderModel(string internetProtocol, int puerto)
+        public ReaderModel(string IPAntenna, int PuertoAntenna, int PuertoLocalHost)
         {
-            ip = internetProtocol;
-            socket = puerto;
+            ip = IPAntenna;
+            socketAntenna = PuertoAntenna;
+
+            ownip = Dns.GetHostName();
+            socketLocalHost = PuertoLocalHost;
+            //connect = new IPEndPoint(IPAddress.Parse(ownip), PuertoLocalHost);
+
             accessGranted = false;
 
             tagBuff = new byte[256, 12];
@@ -60,15 +77,19 @@ namespace ListenerFramework
 
         public string Conectar()
         {
-            if (reader.TcpConnectReader(ip,socket) == 2001)
+            //sender.Connect(connect);
+            if (reader.TcpConnectReader(ip,socketAntenna) == 2001)
             {
-                accessGranted = true;
-                return "Conexion Exitosa";
+                
+                    accessGranted = true;
+
+                    return "Conexion Exitosa";
+               
             }
             else
             {
                 accessGranted = false;
-                return "Fallo la conexion";
+                return "Fallo la conexion, Antenna";
             }
         }
 
@@ -163,7 +184,7 @@ namespace ListenerFramework
                 
                 if (readerPointer == insertPointer)
                 {
-                    Thread.Sleep(1);
+                    Thread.Sleep(3);
                 }
                 else
                 {
@@ -174,7 +195,7 @@ namespace ListenerFramework
                         tagUnico[w] = tagBuff[readerPointer, w];
                         if (lastTag[w] == tagUnico[w]) { counter++; };
                     }
-                    if (counter != 12) { Console.WriteLine(BitConverter.ToString(tagUnico)); }
+                    if (counter != 12) { BitConverter.ToString(tagUnico); }
                     
                     readerPointer++;
                 }
@@ -207,7 +228,7 @@ namespace ListenerFramework
                         tagUnico[w] = tagBuff[readerPointer, w];
                         
                     }
-                    Console.WriteLine(BitConverter.ToString(tagUnico));
+                    Console.WriteLine(Convert.ToBase64String(tagUnico));
                     readerPointer++;
                 }
 
