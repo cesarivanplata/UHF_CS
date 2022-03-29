@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Threading;
 using MR6100Api;
+using System.IO.Ports;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 
 namespace ListenerFramework
@@ -18,82 +20,171 @@ namespace ListenerFramework
          * inciamos hilo obtencion----- Thread h = new Thread(new ThreadStart());
          */
 
+        /*varibles IP*/
         public string ip { get; set; }
-        public string ownip { get; set; }
+        public IPAddress ipHost { get; set; }
         public int socketAntenna { get; set; }
         public int socketLocalHost { get; set; }
+
+        /*Banderas*/
         public bool accessGranted { get; set; }
+        public bool socketNullConectado { get; set; }
+        public bool comNullConectado { get; set; }
+        public int cantidadSalidas { get; set; }
 
-        public volatile byte[,] tagBuff;
-        public volatile byte readerPointer;
-        public volatile byte insertPointer;
+        /*Buffers de control*/
+        public volatile byte[,] TagBuff;
+        public volatile byte ReaderPointer;
+        public volatile byte InsertPointer;
 
+        /* Variables de control a buffer*/
         public int getCount { get; set; }
         public int countTag { get; set; }
-        public bool access { get; set; }
+        public bool Access { get; set; } //no recurdo para que es esta
+
+        /*Creacion de antenna*/
         public MR6100Api.MR6100Api reader { get; set; }
 
-        public Socket sender = new Socket(AddressFamily.InterNetwork,SocketType.Stream,ProtocolType.Tcp);
+        /*varibles xocket*/
+        public Socket sender;
         public IPEndPoint connect;
+
+        /*Variables Com*/
+        public int baudrate { get; set; }
+        public SerialPort serialCOM;
+
+        /***Delegados definicion y creacion***/
+        /*Comunicacion de salida*/
+        public delegate void Enviar(string mensaje);
+        Enviar Envio;
+
+        /*Conexionado*/
+        public delegate string Conexiones();
+        Conexiones Connectar;
+
+        /*Desconectar*/
+
+
+
 
         public ReaderModel()
         {
             ip = "192.168.1.200";
             socketAntenna = 100;
 
-            ownip = Dns.GetHostName();
-            socketLocalHost = 6400;
-            connect = new IPEndPoint(IPAddress.Parse(ownip), socketLocalHost);
-
-            tagBuff = new byte[256, 12];
-            insertPointer = 0;
-            readerPointer = 0;
+            TagBuff = new byte[256, 12];
+            InsertPointer = 0;
+            ReaderPointer = 0;
 
             accessGranted = false;
             countTag = new int();
             getCount = new byte();
             reader = new MR6100Api.MR6100Api();
+
+            Envio = null;
+            Connectar = null;
+            cantidadSalidas = 0;
+            configurarDelegados();
+
         }
 
-        public ReaderModel(string IPAntenna, int PuertoAntenna, int PuertoLocalHost)
+        public ReaderModel(string internetProtocol, int puerto, string puertoCOM, int baudiosCOM)
         {
-            ip = IPAntenna;
-            socketAntenna = PuertoAntenna;
-
-            ownip = Dns.GetHostName();
-            socketLocalHost = PuertoLocalHost;
-            //connect = new IPEndPoint(IPAddress.Parse(ownip), PuertoLocalHost);
+            ip = internetProtocol;
+            socketAntenna = puerto;
+            serialCOM = new SerialPort(puertoCOM, baudiosCOM);
+            serialCOM.ReadTimeout = 500;
+            serialCOM.WriteTimeout = 500;
 
             accessGranted = false;
 
-            tagBuff = new byte[256, 12];
-            readerPointer = 0;
-            insertPointer = 0;
+            TagBuff = new byte[256, 12];
+            ReaderPointer = 0;
+            InsertPointer = 0;
 
             countTag = new int();
             getCount = new byte();
             reader = new MR6100Api.MR6100Api();
+
+            Envio = null;
+            Connectar = null;
+            cantidadSalidas = 1;
+            configurarDelegados();
+
         }
 
-        public string Conectar()
+        public ReaderModel(string internetProtocol, int puerto, int socketHost, string ipPropia)
         {
-            //sender.Connect(connect);
-            if (reader.TcpConnectReader(ip,socketAntenna) == 2001)
+            ip = internetProtocol;
+            socketAntenna = puerto;
+            socketLocalHost = socketHost;
+            ipHost = IPAddress.Parse(ipPropia);
+
+
+            accessGranted = false;
+
+            TagBuff = new byte[256, 12];
+            ReaderPointer = 0;
+            InsertPointer = 0;
+
+            countTag = new int();
+            getCount = new byte();
+            reader = new MR6100Api.MR6100Api();
+
+            Envio = null;
+            Connectar = null;
+            cantidadSalidas = 2;
+            configurarDelegados();
+
+        }
+
+        public ReaderModel(string internetProtocol, int puerto, int socketHost, string ipPropia, string puertoCOM, int baudiosCOM)
+        {
+            ip = internetProtocol;
+            socketAntenna = puerto;
+
+            serialCOM = new SerialPort(puertoCOM, baudiosCOM);
+            serialCOM.ReadTimeout = 500;
+            serialCOM.WriteTimeout = 500;
+
+            socketLocalHost = socketHost;
+            ipHost = IPAddress.Parse(ipPropia);
+
+            accessGranted = false;
+
+            TagBuff = new byte[256, 12];
+            ReaderPointer = 0;
+            InsertPointer = 0;
+
+            countTag = new int();
+            getCount = new byte();
+            reader = new MR6100Api.MR6100Api();
+
+            Envio = null;
+            Connectar = null;
+            cantidadSalidas = 3;
+            configurarDelegados();
+
+        }
+
+
+        public string conectarAntenna()
+        {
+
+            if (reader.TcpConnectReader(ip, socketAntenna) == 2001)
             {
-                
-                    accessGranted = true;
+                accessGranted = true;
 
-                    return "Conexion Exitosa";
-               
+                return "Conexion socket Exitosa";
             }
             else
             {
                 accessGranted = false;
-                return "Fallo la conexion, Antenna";
+                return "Fallo la conexion";
             }
         }
 
-        public string Desconectar()
+        public string desconectar()
         {
             if (reader.TcpCloseConnect() == 2001)
             {
@@ -106,69 +197,103 @@ namespace ListenerFramework
             }
         }
 
-        public void InicializarVariables()
+        public void inicializar()
         {
             accessGranted = false;
-            tagBuff = new byte[256, 12];
-            readerPointer = 0;
-            insertPointer = 0;
+            TagBuff = new byte[256, 12];
+            ReaderPointer = 0;
+            InsertPointer = 0;
+
         }
-              
-        public void ReadIDsBoth()
+
+        public void configurarDelegados()
+        {
+            Envio = null;
+            Connectar = null;
+            switch (cantidadSalidas)
+            {
+                case 1:
+                    Envio += EnviarCom;
+                    Envio += EnviarDefault;
+                    Connectar += ConectarSerial;
+                    Connectar += conectarAntenna;
+                    break;
+                case 2:
+                    Envio += EnviarSocket;
+                    Envio += EnviarDefault;
+                    Connectar += ConectarSocket;
+                    Connectar += conectarAntenna;
+                    break;
+                case 3:
+                    Envio += EnviarCom;
+                    Envio += EnviarSocket;
+                    Envio += EnviarDefault;
+                    Connectar += ConectarSocket;
+                    Connectar += ConectarSerial;
+                    Connectar += conectarAntenna;
+                    break;
+                default:
+                    Connectar += conectarAntenna;
+                    Envio += EnviarDefault;
+                    break;
+            }
+
+        }
+
+        public void readIDs_both()
         {
             /*
              * Esta funcion debe llamarse en un hilo, esto para que a la vez que se esta leyendo ambos tipos se pueda enviar
              * todo lo que se este leyendo, y despues se debe matar el hilo cerrando la conexion con la funcion
              * --------------desconectar()-------------------
              */
-            byte[,] tagIDIso = new byte[1024, 12];
-            int tagContadorIso = 0;
-            int getcountIso = 0;
-            int isoQuery;
+            byte[,] tagID_iso = new byte[1024, 12];
+            int tagContador_iso = 0;
+            int getcount_iso = 0;
+            int isoquery;
 
-            byte[,] tagIDEpc = new byte[1024, 12];
-            int tagContadorEpc = 0;
-            byte getcountEpc = 0;
-            int epcQuery;
+            byte[,] tagID_epc = new byte[1024, 12];
+            int tagContador_epc = 0;
+            byte getcount_epc = 0;
+            int epcquery;
 
             int i;
             int j;
 
             while (accessGranted)
             {
-                isoQuery = reader.IsoMultiTagIdentify(Int32.Parse(ip.Substring(ip.Length - 3)), ref tagIDIso, ref tagContadorIso, ref getcountIso);
-                epcQuery = reader.EpcMultiTagIdentify(Int32.Parse(ip.Substring(ip.Length - 3)), ref tagIDEpc, ref tagContadorEpc, ref getcountEpc);
+                isoquery = reader.IsoMultiTagIdentify(Int32.Parse(ip.Substring(ip.Length - 3)), ref tagID_iso, ref tagContador_iso, ref getcount_iso);
+                epcquery = reader.EpcMultiTagIdentify(Int32.Parse(ip.Substring(ip.Length - 3)), ref tagID_epc, ref tagContador_epc, ref getcount_epc);
 
-                if (epcQuery == 2001 && tagContadorEpc > 0)
+                if (epcquery == 2001 && tagContador_epc > 0)
                 {
-                    
-                    for (i = 0; i<tagContadorEpc; i++)
+
+                    for (i = 0; i < tagContador_epc; i++)
                     {
-                        for ( j = 0; j < 12; j++)
+                        for (j = 0; j < 12; j++)
                         {
-                            tagBuff[insertPointer, j] = tagIDEpc[i, j];
+                            TagBuff[InsertPointer, j] = tagID_epc[i, j];
                         }
-                        insertPointer++;
+                        InsertPointer++;
                     }
-                    
+
                 }
-                if (isoQuery == 2001 && tagContadorIso > 0)
+                if (isoquery == 2001 && tagContador_iso > 0)
                 {
-                    for (i = 0; i < tagContadorIso; i++)
+                    for (i = 0; i < tagContador_iso; i++)
                     {
-                        for ( j = 0; j < 12; j++)
+                        for (j = 0; j < 12; j++)
                         {
-                            tagBuff[insertPointer, j] = tagIDIso[i, j];
+                            TagBuff[InsertPointer, j] = tagID_iso[i, j];
                         }
-                        insertPointer++;
+                        InsertPointer++;
                     }
                 }
             }
 
-            
-        }
 
-        public void GetIDs()
+        }
+        public void get_IDs()
         {
             /*
              * Esta funcion pretende mostrar en consola  los tags leidos no repetidos mientras aun se leen datos, esta originalmente
@@ -179,12 +304,14 @@ namespace ListenerFramework
             byte[] tagUnico = new byte[12];
             byte[] lastTag = new byte[12];
             int counter = 0;
+            string tagUnicoString;
             while (accessGranted)
             {
-                
-                if (readerPointer == insertPointer)
+
+                if (ReaderPointer == InsertPointer)
                 {
-                    Thread.Sleep(3);
+                    Thread.Sleep(1);
+                    //Envio.Invoke("Equal");
                 }
                 else
                 {
@@ -192,19 +319,23 @@ namespace ListenerFramework
                     for (int w = 0; w < 12; w++)
                     {
                         lastTag[w] = tagUnico[w];
-                        tagUnico[w] = tagBuff[readerPointer, w];
+                        tagUnico[w] = TagBuff[ReaderPointer, w];
                         if (lastTag[w] == tagUnico[w]) { counter++; };
                     }
-                    if (counter != 12) { BitConverter.ToString(tagUnico); }
-                    
-                    readerPointer++;
+                    if (counter != 12)
+                    {
+                        tagUnicoString = BitConverter.ToString(tagUnico);
+                        Envio.Invoke(tagUnicoString);
+                    }
+
+                    ReaderPointer++;
                 }
 
             }
 
         }
 
-        public void GetStreamIDs()
+        public void getstream_IDs()
         {
             /*
              * Esta funcion pretende mostrar en consola todos los tags incluso repetidos es la misma base que el get_IDs sin el seguro de
@@ -212,28 +343,118 @@ namespace ListenerFramework
              */
 
             byte[] tagUnico = new byte[12];
-            
+            string tagUnicoString;
+
             while (accessGranted)
             {
-                if (readerPointer == insertPointer)
+
+                if (ReaderPointer == InsertPointer)
                 {
                     Thread.Sleep(1);
 
                 }
                 else
                 {
+
                     for (int w = 0; w < 12; w++)
                     {
-                        
-                        tagUnico[w] = tagBuff[readerPointer, w];
-                        
+
+                        tagUnico[w] = TagBuff[ReaderPointer, w];
+
                     }
-                    Console.WriteLine(Convert.ToBase64String(tagUnico));
-                    readerPointer++;
+                    tagUnicoString = BitConverter.ToString(tagUnico);
+                    Console.WriteLine(tagUnicoString);
+                    serialCOM.WriteLine(tagUnicoString);
+
+                    ReaderPointer++;
                 }
 
             }
 
+        }
+
+        public string ConectarSerial()
+        {
+            try
+            {
+                serialCOM.Open();
+                comNullConectado = true;
+                return "Conexion Com Exitosa";
+            }
+            catch (Exception ex)
+            {
+                return "Conexion Com Fallida" + ex.ToString();
+            }
+        }
+
+        public void EnviarCom(string mensaje)
+        {
+            if (comNullConectado)
+            {
+                serialCOM.WriteLine(mensaje);
+            }
+        }
+
+        public void Read()
+        {
+            string message;
+            while (accessGranted)
+            {
+                try
+                {
+                    message = serialCOM.ReadLine();
+                    if (message == "BorraLista")
+                    {
+
+                    }
+                }
+                catch (TimeoutException)
+                {
+                    Thread.Sleep(100);
+                }
+            }
+        }
+
+        public string ConectarSocket()
+        {
+            try
+            {
+                connect = new IPEndPoint(ipHost, socketLocalHost);
+                sender = new Socket(ipHost.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                sender.Connect(connect);
+                socketNullConectado = true;
+                return "Conexion Exitosa al socket";
+            }
+            catch (Exception ex)
+            {
+                return "Fallo Conexion al host:" + ex.ToString();
+            }
+        }
+
+        public void DesconectarSocket()
+        {
+            sender.Shutdown(SocketShutdown.Both);
+            sender.Close();
+        }
+
+        public void EnviarSocket(string mensaje)
+        {
+            if (socketNullConectado)
+            {
+                byte[] mensajeBytes = Encoding.ASCII.GetBytes(mensaje);
+                int bytesEnviados = sender.Send(mensajeBytes);
+            }
+        }
+
+
+        public void EnviarDefault(string mensaje)
+        {
+            Console.WriteLine(mensaje);
+        }
+
+        public void invocarDelegado()
+        {
+            Connectar.Invoke();
         }
 
     }
