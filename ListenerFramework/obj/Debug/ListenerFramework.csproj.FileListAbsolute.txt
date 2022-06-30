@@ -7,3 +7,11 @@ C:\Users\PlantotMon02-001\source\repos\ListenerFramework\obj\Debug\ListenerFrame
 C:\Users\PlantotMon02-001\source\repos\ListenerFramework\obj\Debug\ListenerFramework.csproj.CopyComplete
 C:\Users\PlantotMon02-001\source\repos\ListenerFramework\obj\Debug\ListenerFramework.exe
 C:\Users\PlantotMon02-001\source\repos\ListenerFramework\obj\Debug\ListenerFramework.pdb
+D:\CesarRepositorios\UHF_CS\ListenerFramework\bin\Debug\ListenerFramework.exe.config
+D:\CesarRepositorios\UHF_CS\ListenerFramework\bin\Debug\ListenerFramework.exe
+D:\CesarRepositorios\UHF_CS\ListenerFramework\bin\Debug\ListenerFramework.pdb
+D:\CesarRepositorios\UHF_CS\ListenerFramework\obj\Debug\ListenerFramework.csproj.AssemblyReference.cache
+D:\CesarRepositorios\UHF_CS\ListenerFramework\obj\Debug\ListenerFramework.csproj.CoreCompileInputs.cache
+D:\CesarRepositorios\UHF_CS\ListenerFramework\obj\Debug\ListenerFramework.csproj.CopyComplete
+D:\CesarRepositorios\UHF_CS\ListenerFramework\obj\Debug\ListenerFramework.exe
+D:\CesarRepositorios\UHF_CS\ListenerFramework\obj\Debug\ListenerFramework.pdb

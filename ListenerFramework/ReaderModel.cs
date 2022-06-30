@@ -119,8 +119,10 @@ namespace ListenerFramework
 
             while (accessGranted)
             {
-                isoquery = reader.IsoMultiTagIdentify(Int32.Parse(ip.Substring(ip.Length - 3)), ref tagID_iso, ref tagContador_iso, ref getcount_iso);
+                isoquery = reader.IsoMultiTagRead(Int32.Parse(ip.Substring(ip.Length - 3)),9, ref tagID_iso, ref tagContador_iso, ref getcount_iso);
                 epcquery = reader.EpcMultiTagIdentify(Int32.Parse(ip.Substring(ip.Length - 3)), ref tagID_epc, ref tagContador_epc, ref getcount_epc);
+				//epcquery = reader.EpcRead(Int32.Parse(ip.Substring(ip.Length - 3)), 3,0x09,0x04,1);
+
 
                 if (epcquery == 2001 && tagContador_epc > 0)
                 {
